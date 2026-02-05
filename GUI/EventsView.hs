@@ -13,14 +13,12 @@ module GUI.EventsView (
   ) where
 
 import GHC.RTS.Events
-import Debug.Trace
 
 import Graphics.UI.Gtk hiding (rectangle)
 import Graphics.Rendering.Cairo
-import qualified GUI.GtkExtras as GtkExt
+import GUI.ViewerColours
 
 import Control.Monad
-import Control.Monad.Reader
 import Data.Array
 import Data.Monoid
 import Data.IORef
@@ -68,8 +66,6 @@ eventsViewNew builder EventsViewActions{..} = do
   vScrollbar   <- getWidget castToVScrollbar ("eventsVScroll" :: T.Text)
   adj          <- get vScrollbar rangeAdjustment
 
-  -- make the background white
-  widgetModifyBg drawArea StateNormal (Color 0xffff 0xffff 0xffff)
   widgetSetCanFocus drawArea True
   --TODO: needs to be reset on each style change ^^
 
@@ -306,8 +302,7 @@ drawEvents EventsView{drawArea, adj}
   sequence_
     [ do when (inside || selected) $
            renderWithDrawWindow win $ do
-             -- TODO: figure out how I can grab the correct color from GTK's style
-             setSourceRGBA 0.2 1 1 0.2
+             setSourceRGBAForStyle styleGetBackground style state1
              rectangle 0 y (fromIntegral width) lineHeight
              fill
 
@@ -316,6 +311,7 @@ drawEvents EventsView{drawArea, adj}
          layoutSetAlignment layout AlignRight
          layoutSetWidth layout (Just (fromIntegral timeWidth))
          renderWithDrawWindow win $ do
+           setForegroundColor style state2
            moveTo 0 y
            showLayout layout
 
@@ -324,6 +320,7 @@ drawEvents EventsView{drawArea, adj}
          layoutSetAlignment layout AlignLeft
          layoutSetWidth layout (Just (fromIntegral descrWidth))
          renderWithDrawWindow win $ do
+           setForegroundColor style state2
            moveTo (fromIntegral $ timeWidth + columnGap) y
            showLayout layout
 
@@ -333,7 +330,7 @@ drawEvents EventsView{drawArea, adj}
           inside   = maybe False (\ (s, e) -> s <= n && n <= e) mrange
           selected = cursorPos == n
           (state1, state2)
-            | inside    = (StatePrelight, StatePrelight)
+            | inside    = (StateSelected, StateSelected)
             | selected  = (state, state)
             | otherwise = (state, StateNormal)
     ]
@@ -349,6 +346,7 @@ drawEvents EventsView{drawArea, adj}
           Message     msg   -> TB.fromText msg
           UserMessage msg   -> TB.fromText msg
           _                 -> buildEventInfo spec
+    setForegroundColor = setSourceRGBAForStyle styleGetForeground
 
 -------------------------------------------------------------------------------
 

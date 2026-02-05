@@ -137,3 +137,11 @@ setSourceRGBAhex (Color r g b) t
                   (fromIntegral b/0xFFFF) t
 
 -------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+setSourceRGBAForStyle :: (Style -> StateType -> IO Color) -> Style -> StateType -> Render ()
+setSourceRGBAForStyle getColor style state = do
+  color <- liftIO $ getColor style state
+  setSourceRGBAhex color 1
+
+-------------------------------------------------------------------------------
